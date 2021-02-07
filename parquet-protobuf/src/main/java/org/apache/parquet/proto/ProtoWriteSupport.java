@@ -21,6 +21,7 @@ package org.apache.parquet.proto;
 import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.util.Timestamps;
 import com.twitter.elephantbird.util.Protobufs;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.hadoop.BadConfigurationException;
@@ -230,16 +231,32 @@ public class ProtoWriteSupport<T extends MessageOrBuilder> extends WriteSupport<
 
     private FieldWriter createWriter(FieldDescriptor fieldDescriptor, Type type) {
 
+      // handle types specified by metadata
+      ProtoParquetOptions.ParquetFieldOptions fieldOptions = ProtoParquetOptionsHelper.INSTANCE.getFieldOptions(fieldDescriptor);
+      if (fieldOptions.getFieldType() == ProtoParquetOptions.ParquetFieldType.PARQUETFIELDTYPE_WELLKNOWNTIMESTAMP) {
+        return new WellKnownTimestampWriter();
+      }
+
+      // no special type indicated in metadata, so use normal processing
       switch (fieldDescriptor.getJavaType()) {
-        case STRING: return new StringWriter() ;
-        case MESSAGE: return createMessageWriter(fieldDescriptor, type);
-        case INT: return new IntWriter();
-        case LONG: return new LongWriter();
-        case FLOAT: return new FloatWriter();
-        case DOUBLE: return new DoubleWriter();
-        case ENUM: return new EnumWriter(fieldDescriptor.getEnumType());
-        case BOOLEAN: return new BooleanWriter();
-        case BYTE_STRING: return new BinaryWriter();
+        case STRING:
+          return new StringWriter();
+        case MESSAGE:
+          return createMessageWriter(fieldDescriptor, type);
+        case INT:
+          return new IntWriter();
+        case LONG:
+          return new LongWriter();
+        case FLOAT:
+          return new FloatWriter();
+        case DOUBLE:
+          return new DoubleWriter();
+        case ENUM:
+          return new EnumWriter(fieldDescriptor.getEnumType());
+        case BOOLEAN:
+          return new BooleanWriter();
+        case BYTE_STRING:
+          return new BinaryWriter();
       }
 
       return unknownType(fieldDescriptor);//should not be executed, always throws exception.
@@ -554,6 +571,15 @@ public class ProtoWriteSupport<T extends MessageOrBuilder> extends WriteSupport<
       ByteString byteString = (ByteString) value;
       Binary binary = Binary.fromConstantByteArray(byteString.toByteArray());
       recordConsumer.addBinary(binary);
+    }
+  }
+
+  class WellKnownTimestampWriter extends FieldWriter {
+    @Override
+    final void writeRawValue(Object value) {
+      Timestamp timestamp = (Timestamp) value;
+      long nanos = Timestamps.toNanos(timestamp);
+      recordConsumer.addLong(nanos);
     }
   }
 

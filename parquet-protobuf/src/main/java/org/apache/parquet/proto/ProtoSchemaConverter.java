@@ -167,6 +167,13 @@ public class ProtoSchemaConverter {
 
   private ParquetType getParquetType(FieldDescriptor fieldDescriptor) {
 
+    // handle types specified by metadata
+    ProtoParquetOptions.ParquetFieldOptions fieldOptions = ProtoParquetOptionsHelper.INSTANCE.getFieldOptions(fieldDescriptor);
+    if (fieldOptions.getFieldType() == ProtoParquetOptions.ParquetFieldType.PARQUETFIELDTYPE_WELLKNOWNTIMESTAMP) {
+      return ParquetType.of(INT64, LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+    }
+
+    // no special type specified, fall back to normal handling
     JavaType javaType = fieldDescriptor.getJavaType();
     switch (javaType) {
       case INT: return ParquetType.of(INT32);

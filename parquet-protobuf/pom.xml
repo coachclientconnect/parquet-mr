@@ -58,6 +58,11 @@
       <version>${protobuf.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java-util</artifactId>
+      <version>${protobuf.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.parquet</groupId>
       <artifactId>parquet-common</artifactId>
       <version>${project.version}</version>
@@ -156,6 +161,23 @@
         <executions>
           <execution>
             <id>generate-sources</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <protocVersion>${protobuf.version}</protocVersion>
+              <addSources>main</addSources>
+              <addProtoSources>all</addProtoSources>
+              <includeMavenTypes>direct</includeMavenTypes>
+              <!--outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory-->
+              <inputDirectories>
+                <include>src/main/resources</include>
+              </inputDirectories>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-test-sources</id>
             <phase>generate-test-sources</phase>
             <goals>
               <goal>run</goal>
